@@ -7,6 +7,8 @@ public class Reset : MonoBehaviour
     [SerializeField] private InputActionReference ResetAction;
 
     private Rigidbody rb;
+    private bool UpsideDown = false;
+    private float boolActivatedTime = -1f;
 
     private void Awake()
     {
@@ -27,6 +29,36 @@ public class Reset : MonoBehaviour
 
     private void OnReset(InputAction.CallbackContext context)
     {
+        ResetPlayer();
+    }
+
+    private void Update()
+    {
+        if (UpsideDown && boolActivatedTime < 0f)
+        {
+            boolActivatedTime = Time.time;
+        }
+        if (UpsideDown && Time.time - boolActivatedTime >= 1.5f)
+        {
+            ResetPlayer();
+        }
+        if (!UpsideDown)
+        {
+            boolActivatedTime = -1f;
+        }
+    }
+
+    private void LateUpdate()
+    {
+        if (transform.up.y < 0)
+        {
+            UpsideDown = true;
+        }
+    }
+
+    private void ResetPlayer()
+    {
+        UpsideDown = !UpsideDown;
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
 
@@ -35,5 +67,7 @@ public class Reset : MonoBehaviour
         Vector3 position = transform.position;
         position.y += .5f;
         transform.position = position;
+
+        GetComponent<Player>().SetPlayer(false);
     }
 }

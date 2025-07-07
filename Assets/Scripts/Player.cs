@@ -13,11 +13,11 @@ public class Player : MonoBehaviour
     [SerializeField] private float acceleration = 15f;
     [SerializeField] private float turnSpeed = 100f;
     [SerializeField] private float maxSpeed = 10f;
-    [SerializeField] private float deadzone = 0.1f;
     [SerializeField] private float JumpForce = 5f;
     [SerializeField] private float groundCheckDistance = 0.5f;
     private bool PlayerGrounded = true;
     private bool PlayerTrick = false;
+    private bool PlayerOccupied = false;
     
     private Animator animator;
     private Rigidbody rb;
@@ -43,12 +43,13 @@ public class Player : MonoBehaviour
         MoveAction.action.Disable();
         JumpAction.action.Disable();
 
-        MoveAction.action.performed -= OnJump;
+        MoveAction.action.performed -= OnMove;
+        JumpAction.action.performed -= OnJump;
     }
 
     private void OnJump(InputAction.CallbackContext context)
     {
-        if (PlayerGrounded)
+        if (PlayerGrounded && !PlayerOccupied)
         {
             animator.Play("Jump");
             rb.AddForce(Vector3.up * JumpForce, ForceMode.Impulse);
@@ -94,16 +95,13 @@ public class Player : MonoBehaviour
 
         if (PlayerGrounded)
         {
-            // 1. Rotation avant l'accélération
             float turn = turnInput * turnSpeed * Time.fixedDeltaTime;
             Quaternion rotation = Quaternion.Euler(0f, turn, 0f);
             rb.MoveRotation(rb.rotation * rotation);
 
-            // 2. Appliquer accélération vers l'avant
             Vector3 force = transform.forward * forwardInput * acceleration;
             rb.AddForce(force, ForceMode.Force);
 
-            // 3. Clamp vitesse max (sur XZ uniquement)
             Vector3 flatVel = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
             if (flatVel.magnitude > maxSpeed)
             {
@@ -118,7 +116,13 @@ public class Player : MonoBehaviour
         Debug.Log($"Grounded : {IsGrounded()}");
     }
 
+    /*------------------------*/
+
     public bool GetGrounded(){return PlayerGrounded;}
-    public bool GetPlayer(){return PlayerGrounded;}
+    public bool GetPlayer(){return PlayerTrick;}
+    public bool GetPlayerState() { return PlayerOccupied; }
+
     public void SetPlayer(bool value){PlayerTrick = value;}
+    public void SetPlayerState(bool value) { PlayerOccupied = value; }
+
 }
