@@ -5,6 +5,7 @@ public class Reset : MonoBehaviour
 {
     //Variables Autres
     [SerializeField] private InputActionReference ResetAction;
+    [SerializeField] private Score script;
 
     private Rigidbody rb;
     private bool UpsideDown = false;
@@ -68,6 +69,6 @@ public class Reset : MonoBehaviour
         position.y += .5f;
         transform.position = position;
 
-        GetComponent<Player>().SetPlayer(false);
+        script.RemoveScore(50);
     }
 }

@@ -8,6 +8,7 @@ public class Player : MonoBehaviour
     [SerializeField] private InputActionReference MoveAction;
     [SerializeField] private InputActionReference JumpAction;
     [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private LayerMask ObstacleLayer;
 
     //Variables Parametres
     [SerializeField] private float acceleration = 15f;
@@ -16,6 +17,7 @@ public class Player : MonoBehaviour
     [SerializeField] private float JumpForce = 5f;
     [SerializeField] private float groundCheckDistance = 0.5f;
     private bool PlayerGrounded = true;
+    private bool PlayerOnObstacle = false;
     private bool PlayerTrick = false;
     private bool PlayerOccupied = false;
     
@@ -26,7 +28,6 @@ public class Player : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         animator = GetComponent<Animator>();
-        MoveAction.action.canceled += OnStop;
     }
 
     private void OnEnable()
@@ -35,6 +36,7 @@ public class Player : MonoBehaviour
         JumpAction.action.Enable();
 
         MoveAction.action.performed += OnMove;
+        MoveAction.action.canceled += OnStop;
         JumpAction.action.performed += OnJump;
     }
 
@@ -44,12 +46,13 @@ public class Player : MonoBehaviour
         JumpAction.action.Disable();
 
         MoveAction.action.performed -= OnMove;
+        MoveAction.action.canceled -= OnStop;
         JumpAction.action.performed -= OnJump;
     }
 
     private void OnJump(InputAction.CallbackContext context)
     {
-        if (PlayerGrounded && !PlayerOccupied)
+        if (PlayerGrounded && !PlayerOccupied || PlayerOnObstacle && !PlayerOccupied)
         {
             animator.Play("Jump");
             rb.AddForce(Vector3.up * JumpForce, ForceMode.Impulse);
@@ -77,6 +80,17 @@ public class Player : MonoBehaviour
         return grounded;
     }
 
+    private bool IsOnObstacle()
+    {
+        Vector3 origin = transform.position + Vector3.up * 0.1f; // pour éviter de partir trop bas
+        bool grounded = Physics.Raycast(origin, Vector3.down, groundCheckDistance, ObstacleLayer);
+
+        // Debug visuel
+        Debug.DrawRay(origin, Vector3.down * groundCheckDistance, grounded ? Color.green : Color.red);
+
+        return grounded;
+    }
+
     private void FixedUpdate()
     {
         if (IsGrounded())
@@ -88,12 +102,21 @@ public class Player : MonoBehaviour
             PlayerGrounded = false;
         }
 
+        if (IsOnObstacle())
+        {
+            PlayerOnObstacle = true;
+        }
+        else
+        {
+            PlayerOnObstacle = false;
+        }
+
         Vector2 input = MoveAction.action.ReadValue<Vector2>();
 
         float forwardInput = input.y;
         float turnInput = input.x;
 
-        if (PlayerGrounded)
+        if (PlayerGrounded || PlayerOnObstacle)
         {
             float turn = turnInput * turnSpeed * Time.fixedDeltaTime;
             Quaternion rotation = Quaternion.Euler(0f, turn, 0f);
@@ -111,14 +134,10 @@ public class Player : MonoBehaviour
         }
     }
 
-    private void Update()
-    {
-        Debug.Log($"Grounded : {IsGrounded()}");
-    }
-
     /*------------------------*/
 
     public bool GetGrounded(){return PlayerGrounded;}
+    public bool GetObstacle() { return PlayerOnObstacle; }
     public bool GetPlayer(){return PlayerTrick;}
     public bool GetPlayerState() { return PlayerOccupied; }
 
