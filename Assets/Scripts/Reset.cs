@@ -55,6 +55,10 @@ public class Reset : MonoBehaviour
         {
             UpsideDown = true;
         }
+        else
+        {
+            UpsideDown = false;
+        }
     }
 
     private void ResetPlayer()
